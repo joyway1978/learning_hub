@@ -188,7 +188,7 @@ export const getLoggerConfig = (): LoggerConfig => ({ ...currentConfig });
 /**
  * Log authentication events
  */
-export const logAuth = (action: 'login' | 'logout' | 'register' | 'refresh' | 'token_expired', userId?: string | number, meta?: Record<string, unknown>): void => {
+export const logAuth = (action: 'login' | 'logout' | 'register' | 'register_success' | 'register_failed' | 'refresh' | 'token_expired', userId?: string | number, meta?: Record<string, unknown>): void => {
   const authLogger = createLogger('AUTH');
   authLogger.info(`Auth event: ${action}`, {
     action,

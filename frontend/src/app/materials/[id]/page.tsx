@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMaterialDetail } from '@/hooks/useMaterialDetail';
@@ -24,9 +24,9 @@ import {
 } from 'lucide-react';
 
 interface MaterialDetailPageProps {
-  params: Promise<{
+  params: {
     id: string;
-  }>;
+  };
 }
 
 // 获取文件类型图标
@@ -128,7 +128,7 @@ function RelatedMaterials({
 
 export default function MaterialDetailPage({ params }: MaterialDetailPageProps) {
   const router = useRouter();
-  const { id } = use(params);
+  const { id } = params;
   const materialId = parseInt(id, 10);
 
   const {
@@ -342,7 +342,7 @@ function DesktopInfoPanel({
       <div className="flex items-center gap-6 py-4 border-y border-stone-100">
         <div className="flex items-center gap-2 text-stone-600">
           <Eye className="w-5 h-5 text-amber-500" />
-          <span className="font-medium">{material.view_count.toLocaleString()}</span>
+          <span className="font-medium">{(material.view_count ?? 0).toLocaleString()}</span>
           <span className="text-sm text-stone-400">浏览</span>
         </div>
         <div className="flex items-center gap-2 text-stone-600">
@@ -353,7 +353,7 @@ function DesktopInfoPanel({
         <div className="flex items-center gap-2 text-stone-600">
           <Download className="w-5 h-5 text-amber-500" />
           <span className="font-medium">
-            {material.download_count.toLocaleString()}
+            {(material.download_count ?? 0).toLocaleString()}
           </span>
           <span className="text-sm text-stone-400">下载</span>
         </div>
@@ -455,7 +455,7 @@ function MobileInfoPanel({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 text-stone-600">
             <Eye className="w-4 h-4 text-amber-500" />
-            <span className="text-sm">{material.view_count.toLocaleString()}</span>
+            <span className="text-sm">{(material.view_count ?? 0).toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-1 text-stone-600">
             <Heart className="w-4 h-4 text-amber-500" />

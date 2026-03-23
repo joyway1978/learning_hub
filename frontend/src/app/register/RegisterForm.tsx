@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { logAuth } from '@/lib/logger';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export function RegisterForm() {
   // 如果已登录，跳转到首页
   useEffect(() => {
     if (isLoggedIn) {
+      logAuth('login', undefined, { source: 'register_redirect', redirect: searchParams.get('redirect') || '/' });
       const redirect = searchParams.get('redirect');
       router.push(redirect || '/');
     }
@@ -103,6 +105,8 @@ export function RegisterForm() {
     setErrors((prev) => ({ ...prev, general: undefined }));
 
     try {
+      logAuth('register', undefined, { email: formData.email, source: 'register_form' });
+
       // 注册并自动登录
       await register({
         email: formData.email,
@@ -110,16 +114,19 @@ export function RegisterForm() {
         name: formData.name,
       });
 
-      // 注册成功，跳转到首页
-      const redirect = searchParams.get('redirect');
-      router.push(redirect || '/');
+      // 注册成功，等待 useEffect 检测到 isLoggedIn 变化后自动跳转
+      logAuth('register_success', undefined, { email: formData.email, source: 'register_form' });
     } catch (error: any) {
       // 处理注册错误
+      // FastAPI HTTPException detail is returned as response body directly
       const errorData = error.response?.data?.error;
       let errorMessage = '注册失败，请稍后重试';
 
       if (errorData) {
-        if (errorData.message?.includes('email')) {
+        // Check for email already exists by error code or message
+        if (errorData.code === 'EMAIL_ALREADY_EXISTS' ||
+            errorData.message?.includes('邮箱') ||
+            errorData.message?.includes('email')) {
           errorMessage = '该邮箱已被注册';
           setErrors((prev) => ({ ...prev, email: '该邮箱已被注册' }));
         } else {
@@ -127,9 +134,20 @@ export function RegisterForm() {
         }
       }
 
-      if (!errors.email) {
-        setErrors((prev) => ({ ...prev, general: errorMessage }));
-      }
+      // Only set general error if email-specific error is not set
+      setErrors((prev) => {
+        if (prev.email) {
+          return prev;
+        }
+        return { ...prev, general: errorMessage };
+      });
+
+      logAuth('register_failed', undefined, {
+        email: formData.email,
+        error: errorMessage,
+        errorCode: errorData?.code,
+        source: 'register_form'
+      });
     } finally {
       setIsSubmitting(false);
     }

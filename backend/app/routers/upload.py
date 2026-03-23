@@ -40,8 +40,13 @@ from app.services.file_validation import (
     PDF_MAX_SIZE,
 )
 from app.services.thumbnail_service import process_thumbnail_generation
+from app.core.logging import get_logger, get_audit_logger
 
 router = APIRouter()
+
+# Initialize loggers
+logger = get_logger(__name__)
+audit_logger = get_audit_logger()
 
 
 def generate_object_name(user_id: int, filename: str) -> str:
@@ -104,6 +109,7 @@ async def save_upload_file_temp(upload_file: UploadFile) -> tuple[str, int]:
             tmp.write(chunk)
             total_size += len(chunk)
 
+    logger.debug(f"File saved to temp: {tmp_path}, size={total_size} bytes")
     return tmp_path, total_size
 
 
@@ -189,10 +195,13 @@ async def upload_file(
     """
     tmp_file_path: Optional[str] = None
 
+    logger.info(f"Upload started: user_id={current_user.id}, filename={file.filename}, title={title}")
+
     try:
         # Step 1: Initial validation (type check only, before reading file)
         type_validation = validate_upload_file(file)
         if not type_validation.is_valid:
+            logger.warning(f"Upload validation failed (type): {file.filename}, errors={type_validation.errors}")
             raise_validation_error(type_validation)
 
         # Step 2: Save to temporary file and get size
@@ -201,6 +210,7 @@ async def upload_file(
         # Step 3: Validate file size
         size_validation = validate_file_with_size(file, file_size)
         if not size_validation.is_valid:
+            logger.warning(f"Upload validation failed (size): {file.filename}, size={file_size}, errors={size_validation.errors}")
             raise_validation_error(size_validation)
 
         # Determine material type
@@ -234,8 +244,10 @@ async def upload_file(
                     content_type=content_type,
                     file_size=file_size
                 )
+            logger.info(f"File uploaded to MinIO: {object_name}, size={file_size}")
         except Exception as e:
             # Upload failed - delete the database record
+            logger.error(f"MinIO upload failed: {object_name}, error={e}")
             db.delete(material)
             db.commit()
             raise HTTPException(
@@ -262,12 +274,22 @@ async def upload_file(
                 material_type
             )
 
+        audit_logger.info(
+            f"File uploaded successfully: material_id={material.id}, user_id={current_user.id}, "
+            f"filename={file.filename}, type={material_type.value}, size={file_size}"
+        )
+        logger.info(
+            f"Upload completed: material_id={material.id}, user_id={current_user.id}, "
+            f"title={title}, type={material_type.value}"
+        )
+
         # Return response
         return MaterialResponse.model_validate(material)
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Unexpected upload error: user_id={current_user.id}, filename={file.filename}, error={e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={

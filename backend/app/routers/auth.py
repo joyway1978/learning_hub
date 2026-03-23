@@ -31,9 +31,14 @@ from app.schemas.user import (
     UserCreate,
     UserResponse,
 )
+from app.core.logging import get_logger, get_audit_logger
 
 router = APIRouter(tags=["Authentication"])
 security = HTTPBearer()
+
+# Initialize loggers
+logger = get_logger(__name__)
+audit_logger = get_audit_logger()
 
 
 class TokenResponse(Token):
@@ -79,6 +84,7 @@ async def register(
     """
     # Check if email already exists
     if check_email_exists(db, user_data.email):
+        audit_logger.warning(f"Registration failed: email already exists - {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -92,6 +98,8 @@ async def register(
 
     # Create new user
     user = create_user(db, user_data)
+    audit_logger.info(f"User registered successfully: user_id={user.id}, email={user.email}")
+    logger.info(f"New user registered: {user.email} (ID: {user.id})")
 
     return UserResponse.model_validate(user)
 
@@ -118,15 +126,23 @@ async def login(
         HTTPException 401: If email or password is incorrect
     """
     # Authenticate user
-    user = authenticate_user_or_raise(
-        db,
-        email=login_data.email,
-        password=login_data.password
-    )
+    try:
+        user = authenticate_user_or_raise(
+            db,
+            email=login_data.email,
+            password=login_data.password
+        )
+    except HTTPException as e:
+        audit_logger.warning(f"Login failed for email: {login_data.email}, error: {e.detail}")
+        logger.warning(f"Failed login attempt: {login_data.email}")
+        raise
 
     # Create tokens
     access_token = create_access_token(subject=user.id)
     refresh_token = create_refresh_token(subject=user.id)
+
+    audit_logger.info(f"User logged in: user_id={user.id}, email={user.email}")
+    logger.info(f"User logged in: {user.email} (ID: {user.id})")
 
     return TokenResponse(
         access_token=access_token,
@@ -279,6 +295,10 @@ async def logout(
 
     Returns success message.
     """
+    # Log the logout event
+    audit_logger.info(f"User logged out: user_id={current_user.id}, email={current_user.email}")
+    logger.info(f"User logged out: {current_user.email} (ID: {current_user.id})")
+
     # In a more advanced implementation, you could:
     # 1. Add tokens to a blacklist (requires Redis/cache)
     # 2. Track token jti and revoke them

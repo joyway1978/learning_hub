@@ -1,0 +1,2 @@
+# This directory is used for storing application logs
+# Log files are rotated automatically and should not be committed to git

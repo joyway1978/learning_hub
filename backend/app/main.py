@@ -16,6 +16,7 @@ from app.database import engine, Base, SessionLocal
 from app.core.init_db import init_db
 from app.core.storage import minio_client
 from app.core.scheduler import init_scheduler, start_scheduler, shutdown_scheduler
+from app.core.logging import setup_logging, get_logger
 
 
 # Create all database tables on startup (for development only, use Alembic in production)
@@ -54,6 +55,11 @@ async def lifespan(app: FastAPI):
 
     Handles startup and shutdown events.
     """
+    # Initialize logging first
+    setup_logging()
+    logger = get_logger(__name__)
+    logger.info("Application starting up...")
+
     # Startup
     if settings.debug:
         create_tables()
@@ -64,10 +70,14 @@ async def lifespan(app: FastAPI):
     init_scheduler()
     start_scheduler()
 
+    logger.info("Application startup complete")
+
     yield
 
     # Shutdown
+    logger.info("Application shutting down...")
     shutdown_scheduler()
+    logger.info("Application shutdown complete")
 
 
 app = FastAPI(

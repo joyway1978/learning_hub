@@ -32,8 +32,13 @@ from app.schemas.material import (
     MaterialWithUploader
 )
 from app.services.view_service import record_view_async
+from app.core.logging import get_logger, get_audit_logger
 
 router = APIRouter()
+
+# Initialize loggers
+logger = get_logger(__name__)
+audit_logger = get_audit_logger()
 
 
 def _get_client_ip(request: Request) -> Optional[str]:
@@ -138,6 +143,15 @@ async def list_materials(
     if page_size > settings.max_page_size:
         page_size = settings.max_page_size
 
+    # Log list request
+    client_ip = _get_client_ip(request)
+    user_id = current_user.id if current_user else None
+    logger.info(
+        f"Materials list requested: page={page}, page_size={page_size}, "
+        f"sort_by={sort_by}, sort_order={sort_order}, type={material_type}, "
+        f"search={search}, user_id={user_id}, ip={client_ip}"
+    )
+
     # Parse material type filter
     type_filter = None
     if material_type:
@@ -213,6 +227,11 @@ async def list_materials(
         )
         items.append(item)
 
+    logger.info(
+        f"Materials list returned: {len(items)} items, total={total}, "
+        f"page={page}/{total_pages}"
+    )
+
     return MaterialListResponse(
         items=items,
         total=total,
@@ -249,6 +268,7 @@ async def get_material_detail(
     material = get_material_by_id(db, material_id, include_uploader=True)
 
     if not material:
+        logger.warning(f"Material not found: material_id={material_id}, user_id={current_user.id if current_user else None}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
@@ -289,6 +309,11 @@ async def get_material_detail(
         material_id=material.id,
         user_id=user_id,
         ip_address=client_ip
+    )
+
+    logger.info(
+        f"Material detail viewed: material_id={material_id}, "
+        f"title='{material.title}', user_id={user_id}, ip={client_ip}"
     )
 
     # Check if current user has liked this material
@@ -463,6 +488,9 @@ async def toggle_material_like(
     try:
         is_liked, like_count = toggle_like(db, current_user.id, material_id)
     except ValueError as e:
+        logger.warning(
+            f"Like toggle failed: material_id={material_id}, user_id={current_user.id}, error={e}"
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
@@ -473,6 +501,16 @@ async def toggle_material_like(
                 }
             }
         )
+
+    action = "liked" if is_liked else "unliked"
+    audit_logger.info(
+        f"Material {action}: material_id={material_id}, user_id={current_user.id}, "
+        f"new_like_count={like_count}"
+    )
+    logger.info(
+        f"Material {action}: material_id={material_id}, user_id={current_user.id}, "
+        f"like_count={like_count}"
+    )
 
     return {
         "liked": is_liked,
@@ -507,6 +545,7 @@ async def stream_material(
     material = get_material_by_id(db, material_id)
 
     if not material:
+        logger.warning(f"Stream requested for non-existent material: material_id={material_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
@@ -517,6 +556,11 @@ async def stream_material(
                 }
             }
         )
+
+    logger.info(
+        f"Material streaming: material_id={material_id}, type={material.type.value}, "
+        f"format={material.file_format}"
+    )
 
     # Check if material is accessible (stream is public for active materials)
     if material.status == MaterialStatus.HIDDEN:

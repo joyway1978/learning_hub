@@ -71,3 +71,8 @@ logs/
 # MinIO data (if local)
 minio_data/
 .gstack/
+
+# Uploaded files
+*.pdf
+*.mp4
+*.webm

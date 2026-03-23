@@ -469,7 +469,7 @@ async def toggle_material_like(
         )
 
     return {
-        "is_liked": is_liked,
+        "liked": is_liked,
         "like_count": like_count
     }
 

@@ -70,3 +70,4 @@ logs/
 
 # MinIO data (if local)
 minio_data/
+.gstack/

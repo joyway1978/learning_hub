@@ -1,24 +1,22 @@
 // User Types
 export interface User {
   id: number;
-  username: string;
   email: string;
-  full_name?: string;
+  name: string;
   avatar_url?: string;
   is_active: boolean;
   created_at: string;
 }
 
 export interface UserLoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface UserRegisterRequest {
-  username: string;
   email: string;
   password: string;
-  full_name?: string;
+  name: string;
 }
 
 export interface TokenResponse {

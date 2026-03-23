@@ -13,17 +13,15 @@ export function RegisterForm() {
   const { register, isLoggedIn } = useAuth();
 
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
-    full_name: '',
+    name: '',
     password: '',
     confirmpassword: '',
   });
 
   const [errors, setErrors] = useState<{
-    username?: string;
     email?: string;
-    full_name?: string;
+    name?: string;
     password?: string;
     confirmpassword?: string;
     general?: string;
@@ -49,15 +47,6 @@ export function RegisterForm() {
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
-    // 用户名验证
-    if (!formData.username) {
-      newErrors.username = '请输入用户名';
-    } else if (formData.username.length < 2) {
-      newErrors.username = '用户名至少需要2个字符';
-    } else if (formData.username.length > 50) {
-      newErrors.username = '用户名不能超过50个字符';
-    }
-
     // 邮箱验证
     if (!formData.email) {
       newErrors.email = '请输入邮箱地址';
@@ -66,12 +55,12 @@ export function RegisterForm() {
     }
 
     // 姓名验证
-    if (!formData.full_name) {
-      newErrors.full_name = '请输入姓名';
-    } else if (formData.full_name.length < 2) {
-      newErrors.full_name = '姓名至少需要2个字符';
-    } else if (formData.full_name.length > 50) {
-      newErrors.full_name = '姓名不能超过50个字符';
+    if (!formData.name) {
+      newErrors.name = '请输入姓名';
+    } else if (formData.name.length < 2) {
+      newErrors.name = '姓名至少需要2个字符';
+    } else if (formData.name.length > 50) {
+      newErrors.name = '姓名不能超过50个字符';
     }
 
     // 密码验证
@@ -116,10 +105,9 @@ export function RegisterForm() {
     try {
       // 注册并自动登录
       await register({
-        username: formData.username,
         email: formData.email,
         password: formData.password,
-        full_name: formData.full_name,
+        name: formData.name,
       });
 
       // 注册成功，跳转到首页
@@ -134,15 +122,12 @@ export function RegisterForm() {
         if (errorData.message?.includes('email')) {
           errorMessage = '该邮箱已被注册';
           setErrors((prev) => ({ ...prev, email: '该邮箱已被注册' }));
-        } else if (errorData.message?.includes('username')) {
-          errorMessage = '该用户名已被使用';
-          setErrors((prev) => ({ ...prev, username: '该用户名已被使用' }));
         } else {
           errorMessage = errorData.message || errorMessage;
         }
       }
 
-      if (!errors.email && !errors.username) {
+      if (!errors.email) {
         setErrors((prev) => ({ ...prev, general: errorMessage }));
       }
     } finally {
@@ -194,22 +179,6 @@ export function RegisterForm() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <Input
-                type="text"
-                name="username"
-                label="用户名"
-                placeholder="请输入用户名"
-                value={formData.username}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                error={errors.username}
-                required
-                autoComplete="username"
-                className="border-[#e7e5e4] focus:border-[#1a1a2e] focus:ring-[#1a1a2e]"
-              />
-            </div>
-
-            <div>
-              <Input
                 type="email"
                 name="email"
                 label="邮箱地址"
@@ -227,13 +196,13 @@ export function RegisterForm() {
             <div>
               <Input
                 type="text"
-                name="full_name"
+                name="name"
                 label="姓名"
                 placeholder="请输入您的姓名"
-                value={formData.full_name}
+                value={formData.name}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                error={errors.full_name}
+                error={errors.name}
                 required
                 autoComplete="name"
                 className="border-[#e7e5e4] focus:border-[#1a1a2e] focus:ring-[#1a1a2e]"

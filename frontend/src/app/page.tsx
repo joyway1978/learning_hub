@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { Header } from '@/components/Header';
 import { MaterialsListClient } from './MaterialsListClient';
 import { Loader2 } from 'lucide-react';
 
@@ -14,8 +13,6 @@ export const dynamic = 'force-dynamic';
 export default function Home() {
   return (
     <div className="min-h-screen bg-stone-50">
-      <Header />
-
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 页面标题 */}
         <div className="mb-8">

@@ -79,9 +79,9 @@ export function LoginForm() {
     setErrors((prev) => ({ ...prev, general: undefined }));
 
     try {
-      // 使用邮箱作为用户名登录
+      // 使用邮箱和密码登录
       await login({
-        username: formData.email,
+        email: formData.email,
         password: formData.password,
       });
 

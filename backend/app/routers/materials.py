@@ -557,8 +557,10 @@ async def stream_material(
             }
         )
 
+    # Handle both enum and string type values
+    type_value = material.type.value if hasattr(material.type, 'value') else material.type
     logger.info(
-        f"Material streaming: material_id={material_id}, type={material.type.value}, "
+        f"Material streaming: material_id={material_id}, type={type_value}, "
         f"format={material.file_format}"
     )
 
@@ -584,11 +586,26 @@ async def stream_material(
 
     # Get file from MinIO
     try:
+        logger.info(f"Attempting to stream from MinIO: bucket={minio_client.bucket_name}, path={material.file_path}")
         response = minio_client.client.get_object(
             minio_client.bucket_name,
             material.file_path
         )
+        logger.info(f"MinIO get_object succeeded for: {material.file_path}")
     except S3Error as e:
+        logger.error(f"MinIO S3Error when streaming {material.file_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": {
+                    "code": "STREAM_ERROR",
+                    "message": "Failed to retrieve file from storage",
+                    "details": {"error": str(e)}
+                }
+            }
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error when streaming {material.file_path}: {type(e).__name__}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={

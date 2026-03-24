@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { MaterialsListClient } from './MaterialsListClient';
+import { DeleteSuccessToast } from './DeleteSuccessToast';
 import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -26,6 +27,8 @@ export default function Home() {
             <p className="text-stone-500">加载中...</p>
           </div>
         }>
+          {/* 删除成功提示 - 在 Suspense 边界内 */}
+          <DeleteSuccessToast />
           <MaterialsListClient />
         </Suspense>
       </main>

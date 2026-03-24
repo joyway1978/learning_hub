@@ -23,6 +23,7 @@ import {
   Video,
   Edit,
   X,
+  Trash2,
 } from 'lucide-react';
 
 interface MaterialDetailPageProps {
@@ -128,6 +129,7 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
   const materialId = parseInt(id, 10);
   const { user } = useAuth();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const {
     material,
@@ -137,8 +139,10 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
     likeCount,
     isLikeLoading,
     isUpdating,
+    isDeleting,
     toggleLike,
     updateMaterial,
+    deleteMaterial,
   } = useMaterialDetail(materialId);
 
   // 检查当前用户是否是上传者
@@ -211,13 +215,22 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
             </h1>
             <div className="flex items-center gap-2">
               {isUploader && (
-                <button
-                  onClick={() => setIsEditDialogOpen(true)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-stone-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span className="hidden sm:inline">编辑</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsEditDialogOpen(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-stone-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span className="hidden sm:inline">编辑</span>
+                  </button>
+                  <button
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">删除</span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -320,6 +333,24 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
             }
           }}
           isLoading={isUpdating}
+        />
+      )}
+
+      {/* 删除确认对话框 */}
+      {isDeleteDialogOpen && material && (
+        <DeleteDialog
+          material={material}
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={async () => {
+            const success = await deleteMaterial();
+            if (success) {
+              setIsDeleteDialogOpen(false);
+              // 删除成功后返回首页，并带上删除成功的标记
+              router.push('/?deleted=true');
+            }
+          }}
+          isLoading={isDeleting}
         />
       )}
     </div>
@@ -527,6 +558,78 @@ function MobileInfoPanel({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// 删除确认对话框
+interface DeleteDialogProps {
+  material: Material;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  isLoading: boolean;
+}
+
+function DeleteDialog({ material, isOpen, onClose, onConfirm, isLoading }: DeleteDialogProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-4 border-b border-stone-200">
+          <h2 className="text-lg font-semibold text-stone-800">删除课件</h2>
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="p-1 text-stone-400 hover:text-stone-600 rounded-full hover:bg-stone-100 transition-colors disabled:opacity-50"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Trash2 className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-stone-700 mb-2">
+                确定要删除《{material.title}》吗？
+              </p>
+              <p className="text-sm text-stone-500">
+                此操作不可恢复，课件将从平台移除，所有点赞和浏览数据也将丢失。
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 text-stone-600 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 rounded-md transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 text-white bg-red-600 hover:bg-red-700 disabled:bg-red-400 rounded-md transition-colors flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  删除中...
+                </>
+              ) : (
+                '删除'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

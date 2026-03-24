@@ -13,9 +13,11 @@ interface UseMaterialDetailReturn {
   likeCount: number;
   isLikeLoading: boolean;
   isUpdating: boolean;
+  isDeleting: boolean;
   refetch: () => void;
   toggleLike: () => Promise<void>;
   updateMaterial: (data: MaterialUpdateRequest) => Promise<boolean>;
+  deleteMaterial: () => Promise<boolean>;
 }
 
 export function useMaterialDetail(materialId: number | string): UseMaterialDetailReturn {
@@ -26,6 +28,7 @@ export function useMaterialDetail(materialId: number | string): UseMaterialDetai
   const [likeCount, setLikeCount] = useState(0);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 用于防止重复请求的ref
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -185,6 +188,50 @@ export function useMaterialDetail(materialId: number | string): UseMaterialDetai
     }
   }, [materialId, isUpdating]);
 
+  // 删除课件
+  const deleteMaterial = useCallback(async (): Promise<boolean> => {
+    const token = getToken();
+    if (!token) {
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+      }
+      return false;
+    }
+
+    if (isDeleting) return false;
+
+    setIsDeleting(true);
+
+    try {
+      await api.delete(`/materials/${materialId}`);
+
+      setError(null);
+      return true;
+    } catch (err) {
+      console.error('删除课件失败:', err);
+
+      let errorMessage = '删除失败，请重试';
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosError = err as { response?: { status?: number; data?: { detail?: string } } };
+        if (axiosError.response?.status === 401) {
+          errorMessage = '请先登录';
+        } else if (axiosError.response?.status === 403) {
+          errorMessage = '您只能删除自己上传的课件';
+        } else if (axiosError.response?.status === 404) {
+          errorMessage = '课件不存在或已被删除';
+        } else if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
+      }
+
+      setError(errorMessage);
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [materialId, isDeleting]);
+
   // 组件挂载时获取数据
   useEffect(() => {
     if (materialId) {
@@ -206,8 +253,10 @@ export function useMaterialDetail(materialId: number | string): UseMaterialDetai
     likeCount,
     isLikeLoading,
     isUpdating,
+    isDeleting,
     refetch,
     toggleLike,
     updateMaterial,
+    deleteMaterial,
   };
 }

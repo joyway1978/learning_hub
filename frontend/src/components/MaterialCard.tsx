@@ -45,7 +45,7 @@ function getFileTypeLabel(fileType: string): string {
 // 获取缩略图URL
 function getThumbnailUrl(materialId: number, thumbnailPath?: string): string {
   if (!thumbnailPath) {
-    return '/images/placeholder.png';
+    return '/images/placeholder.svg';
   }
   // 如果已经是完整URL，直接返回
   if (thumbnailPath.startsWith('http')) {
@@ -63,7 +63,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
 
   const thumbnailUrl = getThumbnailUrl(material.id, material.thumbnail_path);
   const uploaderName = material.uploader?.name || '未知用户';
-  const uploaderAvatar = material.uploader?.avatar_url || '/images/default-avatar.png';
+  const uploaderAvatar = material.uploader?.avatar_url || '/images/default-avatar.svg';
 
   return (
     <Link
@@ -147,7 +147,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
                 alt={uploaderName}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                  (e.target as HTMLImageElement).src = '/images/default-avatar.svg';
                 }}
               />
             </div>

@@ -31,6 +31,9 @@ class MaterialType(str, PyEnum):
     """Material type enumeration."""
     VIDEO = "video"
     PDF = "pdf"
+    PPTX = "pptx"
+    DOCX = "docx"
+    XLSX = "xlsx"
 
 
 class Material(Base):
@@ -41,7 +44,7 @@ class Material(Base):
         id: Primary key
         title: Material title
         description: Material description
-        type: Material type (video/pdf)
+        type: Material type (video, pdf, pptx, docx, xlsx)
         file_path: Path to file in MinIO storage
         file_size: File size in bytes
         file_format: File format extension (e.g., mp4, pdf)
@@ -70,7 +73,7 @@ class Material(Base):
     type: Mapped[MaterialType] = mapped_column(
         String(20),
         nullable=False,
-        comment="Material type: video or pdf"
+        comment="Material type: video, pdf, pptx, docx, or xlsx"
     )
     file_path: Mapped[str] = mapped_column(
         String(500),

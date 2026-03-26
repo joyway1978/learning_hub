@@ -116,7 +116,7 @@ async def list_materials(
     ),
     material_type: Optional[str] = Query(
         default=None,
-        description="Filter by type: video or pdf"
+        description="Filter by type: video, pdf, pptx, docx, or xlsx"
     ),
     search: Optional[str] = Query(
         default=None,
@@ -169,7 +169,7 @@ async def list_materials(
                     "error": {
                         "code": "INVALID_TYPE",
                         "message": "Invalid material type",
-                        "details": {"valid_types": ["video", "pdf"]}
+                        "details": {"valid_types": ["video", "pdf", "pptx", "docx", "xlsx"]}
                     }
                 }
             )

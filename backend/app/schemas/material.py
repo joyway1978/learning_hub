@@ -15,6 +15,9 @@ class MaterialType(str, Enum):
     """Material type enumeration."""
     VIDEO = "video"
     PDF = "pdf"
+    PPTX = "pptx"
+    DOCX = "docx"
+    XLSX = "xlsx"
 
 
 class MaterialStatus(str, Enum):
@@ -30,7 +33,7 @@ class MaterialBase(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=255, description="Material title")
     description: Optional[str] = Field(None, description="Material description")
-    file_type: MaterialType = Field(..., alias="type", serialization_alias="file_type", description="Material type: video or pdf")
+    file_type: MaterialType = Field(..., alias="type", serialization_alias="file_type", description="Material type: video, pdf, pptx, docx, or xlsx")
 
 
 class MaterialCreate(MaterialBase):

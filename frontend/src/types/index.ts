@@ -27,8 +27,20 @@ export interface TokenResponse {
 }
 
 // Material Types
-export type MaterialType = 'video' | 'pdf';
+export type MaterialType = 'video' | 'pdf' | 'pptx' | 'docx' | 'xlsx';
 export type MaterialStatus = 'processing' | 'active' | 'hidden';
+
+// Office MIME Type Constants
+export const OFFICE_MIME_TYPES: Record<string, MaterialType> = {
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+};
+
+// Helper function to check if a MIME type is an Office file
+export function isOfficeFile(mimeType: string): boolean {
+  return mimeType in OFFICE_MIME_TYPES;
+}
 
 export interface Material {
   id: number;

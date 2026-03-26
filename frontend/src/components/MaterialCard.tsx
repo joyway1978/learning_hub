@@ -17,10 +17,12 @@ function getFileTypeIcon(fileType: string) {
       return <Video className="w-4 h-4" />;
     case 'pdf':
       return <FileText className="w-4 h-4" />;
-    case 'ppt':
-      return <FileText className="w-4 h-4" />;
-    case 'doc':
-      return <FileText className="w-4 h-4" />;
+    case 'pptx':
+      return <FileText className="w-4 h-4 text-orange-500" />;
+    case 'docx':
+      return <FileText className="w-4 h-4 text-blue-500" />;
+    case 'xlsx':
+      return <FileText className="w-4 h-4 text-green-500" />;
     default:
       return <File className="w-4 h-4" />;
   }
@@ -33,10 +35,12 @@ function getFileTypeLabel(fileType: string): string {
       return '视频';
     case 'pdf':
       return 'PDF';
-    case 'ppt':
+    case 'pptx':
       return 'PPT';
-    case 'doc':
-      return '文档';
+    case 'docx':
+      return 'Word';
+    case 'xlsx':
+      return 'Excel';
     default:
       return '其他';
   }

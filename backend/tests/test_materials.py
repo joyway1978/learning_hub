@@ -47,7 +47,7 @@ class TestListMaterials:
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 1
-        assert data["items"][0]["type"] == "video"
+        assert data["items"][0]["file_type"] == "video"
 
     def test_list_materials_filter_by_type_pdf(self, client: TestClient, test_video_material: Material, test_pdf_material: Material):
         """Test filtering materials by type (pdf)."""
@@ -56,7 +56,7 @@ class TestListMaterials:
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 1
-        assert data["items"][0]["type"] == "pdf"
+        assert data["items"][0]["file_type"] == "pdf"
 
     def test_list_materials_invalid_type(self, client: TestClient):
         """Test filtering materials with invalid type."""
@@ -116,10 +116,8 @@ class TestListMaterials:
         """Test that page_size is limited to max_page_size."""
         response = client.get("/api/v1/materials?page_size=200")
 
-        assert response.status_code == 200
-        data = response.json()
-        # Should be limited to max_page_size (100)
-        assert data["page_size"] <= 100
+        # API validates page_size with le=100, so it returns 422 for values > 100
+        assert response.status_code == 422
 
 
 class TestGetMaterialDetail:
@@ -136,11 +134,11 @@ class TestGetMaterialDetail:
         assert data["description"] == test_video_material.description
         # Handle both enum and string type values
         type_value = test_video_material.type.value if hasattr(test_video_material.type, 'value') else test_video_material.type
-        assert data["type"] == type_value
+        assert data["file_type"] == type_value
         assert data["view_count"] == test_video_material.view_count
         assert data["like_count"] == test_video_material.like_count
         assert "uploader_name" in data
-        assert "is_liked" in data
+        assert "is_liked_by_me" in data
         assert "related_materials" in data
 
     def test_get_material_detail_not_found(self, client: TestClient):
@@ -191,7 +189,7 @@ class TestGetMaterialDetail:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["is_liked"] is True
+        assert data["is_liked_by_me"] is True
 
     def test_get_material_detail_shows_not_liked(self, authorized_client_2: TestClient, test_video_material: Material):
         """Test that material detail shows if user has not liked it."""
@@ -199,7 +197,7 @@ class TestGetMaterialDetail:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["is_liked"] is False
+        assert data["is_liked_by_me"] is False
 
 
 class TestDeleteMaterial:

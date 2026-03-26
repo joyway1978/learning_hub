@@ -28,12 +28,15 @@ class TestRegister:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["email"] == "newuser@example.com"
-        assert data["name"] == "New User"
-        assert "id" in data
-        assert "created_at" in data
-        assert "is_active" in data
-        assert "password" not in data  # password should not be in response
+        assert "user" in data
+        assert data["user"]["email"] == "newuser@example.com"
+        assert data["user"]["name"] == "New User"
+        assert "id" in data["user"]
+        assert "created_at" in data["user"]
+        assert "is_active" in data["user"]
+        assert "password" not in data["user"]  # password should not be in response
+        assert "access_token" in data
+        assert "refresh_token" in data
 
     def test_register_duplicate_email(self, client: TestClient, test_user: User):
         """Test registration with duplicate email."""

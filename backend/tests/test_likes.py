@@ -23,7 +23,7 @@ class TestToggleLike:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["is_liked"] is True
+        assert data["liked"] is True
         # Verify like_count increased by 1 from the initial value
         assert data["like_count"] == initial_like_count + 1
 
@@ -36,7 +36,7 @@ class TestToggleLike:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["is_liked"] is False
+        assert data["liked"] is False
         assert data["like_count"] == initial_count - 1
 
     def test_like_material_not_found(self, authorized_client: TestClient):
@@ -75,19 +75,19 @@ class TestToggleLike:
         response1 = authorized_client.post(f"/api/v1/materials/{test_video_material.id}/like")
         assert response1.status_code == 200
         data1 = response1.json()
-        assert data1["is_liked"] is True
+        assert data1["liked"] is True
 
         # Second like (should unlike)
         response2 = authorized_client.post(f"/api/v1/materials/{test_video_material.id}/like")
         assert response2.status_code == 200
         data2 = response2.json()
-        assert data2["is_liked"] is False
+        assert data2["liked"] is False
 
         # Third like (should like again)
         response3 = authorized_client.post(f"/api/v1/materials/{test_video_material.id}/like")
         assert response3.status_code == 200
         data3 = response3.json()
-        assert data3["is_liked"] is True
+        assert data3["liked"] is True
 
 
 class TestLikeCRUD:
@@ -259,7 +259,7 @@ class TestLikeInMaterialList:
         # Find our test material in the list
         material = next((m for m in data["items"] if m["id"] == test_video_material.id), None)
         assert material is not None
-        assert material["is_liked"] is True
+        assert material["is_liked_by_me"] is True
 
     def test_material_list_shows_not_liked(self, authorized_client_2: TestClient, test_video_material: Material):
         """Test that material list shows is_liked=False when not liked."""
@@ -270,7 +270,7 @@ class TestLikeInMaterialList:
 
         material = next((m for m in data["items"] if m["id"] == test_video_material.id), None)
         assert material is not None
-        assert material["is_liked"] is False
+        assert material["is_liked_by_me"] is False
 
     def test_material_list_anonymous_no_is_liked(self, client: TestClient, test_video_material: Material):
         """Test that material list for anonymous user has is_liked=False."""
@@ -281,7 +281,7 @@ class TestLikeInMaterialList:
 
         material = next((m for m in data["items"] if m["id"] == test_video_material.id), None)
         assert material is not None
-        assert material["is_liked"] is False
+        assert material["is_liked_by_me"] is False
 
 
 class TestLikeCountConsistency:

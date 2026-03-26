@@ -49,7 +49,7 @@ export function Header() {
                 </svg>
               </div>
               <span className="text-lg font-semibold text-text-primary hidden sm:block">
-                AI Learning
+                学习课件分享平台
               </span>
             </Link>
           </div>

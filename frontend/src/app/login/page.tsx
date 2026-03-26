@@ -4,8 +4,8 @@ import { LoginForm } from './LoginForm';
 import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: '登录 - AI Learning Platform',
-  description: '登录您的AI Learning账号',
+  title: '登录 - 学习课件分享平台',
+  description: '登录您的账号',
 };
 
 export const dynamic = 'force-dynamic';

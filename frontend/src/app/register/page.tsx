@@ -4,8 +4,8 @@ import { RegisterForm } from './RegisterForm';
 import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: '注册 - AI Learning Platform',
-  description: '创建AI Learning账号',
+  title: '注册 - 学习课件分享平台',
+  description: '创建账号',
 };
 
 export const dynamic = 'force-dynamic';

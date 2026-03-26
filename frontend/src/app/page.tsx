@@ -5,7 +5,7 @@ import { DeleteSuccessToast } from './DeleteSuccessToast';
 import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: '课件列表 - AI Learning Platform',
+  title: '课件列表 - 学习课件分享平台',
   description: '浏览和发现优质教学资源',
 };
 

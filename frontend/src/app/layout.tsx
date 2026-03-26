@@ -18,13 +18,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AI Learning Platform - AI教学展示平台',
-  description: '一个现代化的AI教学展示平台，支持课件上传、浏览和点赞功能',
-  keywords: ['AI', '教学', '课件', '学习平台', '教育'],
-  authors: [{ name: 'AI Learning Platform' }],
+  title: '学习课件分享平台',
+  description: '一个现代化的课件分享平台，支持课件上传、浏览和点赞功能',
+  keywords: ['教学', '课件', '学习平台', '教育'],
+  authors: [{ name: '学习课件分享平台' }],
   openGraph: {
-    title: 'AI Learning Platform',
-    description: 'AI教学展示平台',
+    title: '学习课件分享平台',
+    description: '课件分享平台',
     type: 'website',
   },
 };

@@ -231,11 +231,11 @@ def trigger_thumbnail_generation(
     response_model=MaterialResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Upload a file",
-    description="Upload a video (mp4, webm) or PDF file. Requires authentication."
+    description="Upload a video (mp4, webm), PDF, or Office file (pptx, docx, xlsx). Requires authentication."
 )
 async def upload_file(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(..., description="File to upload (video or PDF)"),
+    file: UploadFile = File(..., description="File to upload (video, PDF, or Office)"),
     title: str = Form(..., min_length=1, max_length=255, description="Material title"),
     description: Optional[str] = Form(None, description="Material description"),
     db: Session = Depends(get_db),
@@ -256,6 +256,7 @@ async def upload_file(
     **Supported formats:**
     - Video: mp4, webm, mov, avi, mkv (max 500MB, transcoded to H.264 MP4)
     - PDF: pdf (max 50MB)
+    - Office: pptx, docx, xlsx (max 50MB)
 
     **Video Transcoding:**
     All videos are transcoded to H.264/AAC MP4 format using ffmpeg.
@@ -285,11 +286,14 @@ async def upload_file(
             raise_validation_error(size_validation)
 
         # Determine material type
-        material_type = (
-            MaterialType.VIDEO
-            if size_validation.file_type == FileType.VIDEO
-            else MaterialType.PDF
-        )
+        file_type_to_material_type = {
+            FileType.VIDEO: MaterialType.VIDEO,
+            FileType.PDF: MaterialType.PDF,
+            FileType.PPTX: MaterialType.PPTX,
+            FileType.DOCX: MaterialType.DOCX,
+            FileType.XLSX: MaterialType.XLSX,
+        }
+        material_type = file_type_to_material_type.get(size_validation.file_type)
 
         # Step 4: Transcode video to H.264 for browser compatibility
         processed_file_path = tmp_file_path
@@ -351,8 +355,8 @@ async def upload_file(
         # Step 7: Update status to active
         material = update_material_status(db, material, MaterialStatus.ACTIVE)
 
-        # Step 8: Trigger async thumbnail generation for videos and PDFs
-        if material_type in (MaterialType.VIDEO, MaterialType.PDF):
+        # Step 8: Trigger async thumbnail generation for videos, PDFs, and Office files
+        if material_type in (MaterialType.VIDEO, MaterialType.PDF, MaterialType.PPTX, MaterialType.DOCX, MaterialType.XLSX):
             background_tasks.add_task(
                 trigger_thumbnail_generation,
                 material.id,

@@ -692,7 +692,10 @@ async def stream_material(
     # Determine content type based on file type
     content_type_map = {
         MaterialType.VIDEO: "video/mp4",
-        MaterialType.PDF: "application/pdf"
+        MaterialType.PDF: "application/pdf",
+        MaterialType.PPTX: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        MaterialType.DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        MaterialType.XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     }
     content_type = content_type_map.get(material.type, "application/octet-stream")
     safe_filename = f"{material.id}.{material.file_format}"

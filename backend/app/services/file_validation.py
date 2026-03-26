@@ -20,6 +20,9 @@ class FileType(str, Enum):
     """Supported file types enumeration."""
     VIDEO = "video"
     PDF = "pdf"
+    PPTX = "pptx"
+    DOCX = "docx"
+    XLSX = "xlsx"
 
 
 class ValidationErrorCode(str, Enum):
@@ -57,14 +60,22 @@ PDF_MIME_TYPES = {
     "application/pdf": ["pdf"],
 }
 
+OFFICE_MIME_TYPES = {
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ["pptx"],
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"],
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ["xlsx"],
+}
+
 # Allowed extensions per design requirements
 # Input formats that will be transcoded to H.264 MP4
 ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm", "mov", "avi", "mkv", "mpg", "mpeg", "3gp", "m4v"}
 ALLOWED_PDF_EXTENSIONS = {"pdf"}
+ALLOWED_OFFICE_EXTENSIONS = {"pptx", "docx", "xlsx"}
 
 # Size limits per design requirements
 VIDEO_MAX_SIZE = 524_288_000  # 500MB
 PDF_MAX_SIZE = 52_428_800  # 50MB
+OFFICE_MAX_SIZE = 52_428_800  # 50MB
 
 
 def get_file_extension(filename: str) -> str:
@@ -201,12 +212,40 @@ def validate_file_type(
                 )
         return True, FileType.PDF, None
 
+    # Check Office formats
+    if extension in ALLOWED_OFFICE_EXTENSIONS:
+        # Validate MIME type for Office files
+        valid_office_mimes = set(OFFICE_MIME_TYPES.keys())
+        if mime_type and mime_type not in valid_office_mimes:
+            # Allow some flexibility for Office MIME types
+            valid_prefixes = (
+                "application/vnd.openxmlformats-officedocument",
+                "application/msword",
+                "application/vnd.ms-excel",
+                "application/vnd.ms-powerpoint",
+            )
+            if not any(mime_type.startswith(prefix) for prefix in valid_prefixes if mime_type):
+                return (
+                    False,
+                    None,
+                    f"Invalid MIME type for Office file: {mime_type}"
+                )
+
+        # Map extension to FileType
+        office_type_map = {
+            "pptx": FileType.PPTX,
+            "docx": FileType.DOCX,
+            "xlsx": FileType.XLSX,
+        }
+        return True, office_type_map.get(extension), None
+
     # Unsupported format
     return (
         False,
         None,
         f"Unsupported file format: .{extension}. "
-        f"Supported formats: video (mp4, webm, mov, avi, mkv, mpg, 3gp), PDF (pdf). "
+        f"Supported formats: video (mp4, webm, mov, avi, mkv, mpg, 3gp), "
+        f"PDF (pdf), Office (pptx, docx, xlsx). "
         f"Videos will be transcoded to H.264 MP4 for browser compatibility."
     )
 
@@ -242,6 +281,19 @@ def validate_file_size(file_size: int, file_type: FileType) -> Tuple[bool, Optio
             return (
                 False,
                 f"PDF file too large (max {max_size_mb}MB)",
+                {
+                    "max_size": max_size,
+                    "actual_size": file_size,
+                    "max_size_mb": max_size_mb
+                }
+            )
+    elif file_type in (FileType.PPTX, FileType.DOCX, FileType.XLSX):
+        max_size = OFFICE_MAX_SIZE
+        max_size_mb = 50
+        if file_size > max_size:
+            return (
+                False,
+                f"Office file too large (max {max_size_mb}MB)",
                 {
                     "max_size": max_size,
                     "actual_size": file_size,
@@ -392,4 +444,10 @@ def get_content_type(file_type: FileType, extension: str) -> str:
         return "video/mp4"
     elif file_type == FileType.PDF:
         return "application/pdf"
+    elif file_type == FileType.PPTX:
+        return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    elif file_type == FileType.DOCX:
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    elif file_type == FileType.XLSX:
+        return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return "application/octet-stream"

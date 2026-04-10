@@ -18,8 +18,8 @@ test.describe('Reactions Feature', () => {
   test('should display reaction buttons on material detail page', async ({ page }) => {
     await page.goto('/materials/25');
 
-    // Wait for reaction section to appear (desktop version has mb-3)
-    await page.waitForSelector('h3.mb-3:has-text("表达反馈")', { timeout: 10000 });
+    // Wait for reaction section to appear
+    await page.waitForSelector('h3:has-text("表达反馈")', { timeout: 10000 });
 
     // Check if all 4 reaction buttons are visible (in desktop section)
     const desktopSection = page.locator('.hidden.lg\\:block');

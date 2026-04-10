@@ -2,6 +2,9 @@
 
 import React, { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
+import { api } from '@/lib/api';
+import { getToken } from '@/lib/auth';
 
 // Reaction type definitions
 export type ReactionType = 'thumbs_up' | 'thumbs_down' | 'question' | 'insight';
@@ -18,6 +21,14 @@ const REACTIONS: ReactionConfig[] = [
   { type: 'question', emoji: '❓', tooltip: '有疑问' },
   { type: 'insight', emoji: '💡', tooltip: '有启发' },
 ];
+
+// API响应类型
+interface ReactionResponse {
+  counts: ReactionCounts;
+  user_reaction?: {
+    type: ReactionType;
+  } | null;
+}
 
 interface ReactionCounts {
   thumbs_up: number;
@@ -48,6 +59,7 @@ export function ReactionBar({
   const [localUserReaction, setLocalUserReaction] = useState<ReactionType | null>(userReaction);
   const [localCounts, setLocalCounts] = useState<ReactionCounts>(counts);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Sync with props when they change
   React.useEffect(() => {
@@ -59,6 +71,7 @@ export function ReactionBar({
     if (isProcessing || isLoading) return;
 
     setIsProcessing(true);
+    setError(null);
 
     // Optimistic update
     const previousReaction = localUserReaction;
@@ -74,11 +87,13 @@ export function ReactionBar({
 
       try {
         await onRemove();
-      } catch (error) {
+      } catch (err) {
         // Rollback on error
         setLocalUserReaction(previousReaction);
         setLocalCounts(previousCounts);
-        console.error('Failed to remove reaction:', error);
+        const message = err instanceof Error ? err.message : '移除反馈失败';
+        setError(message);
+        console.error('Failed to remove reaction:', err);
       }
     } else {
       // Toggle on or switch reaction
@@ -94,11 +109,13 @@ export function ReactionBar({
 
       try {
         await onReact(type);
-      } catch (error) {
+      } catch (err) {
         // Rollback on error
         setLocalUserReaction(previousReaction);
         setLocalCounts(previousCounts);
-        console.error('Failed to add reaction:', error);
+        const message = err instanceof Error ? err.message : '添加反馈失败';
+        setError(message);
+        console.error('Failed to add reaction:', err);
       }
     }
 
@@ -106,6 +123,14 @@ export function ReactionBar({
   }, [isProcessing, isLoading, localUserReaction, localCounts, onReact, onRemove]);
 
   const totalReactions = Object.values(localCounts).reduce((sum, count) => sum + count, 0);
+
+  // Auto-clear error after 3 seconds
+  React.useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
@@ -128,6 +153,16 @@ export function ReactionBar({
           );
         })}
       </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{error.toLowerCase().includes('credentials') || error.includes('401')
+            ? '请先登录后再表达反馈'
+            : error}</span>
+        </div>
+      )}
 
       {/* Total reactions summary */}
       {totalReactions > 0 && (
@@ -246,15 +281,10 @@ export function useReactions(materialId: number) {
 
   const fetchReactions = useCallback(async () => {
     try {
-      const response = await fetch(`/api/v1/materials/${materialId}/reactions`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCounts(data.counts);
-        setUserReaction(data.user_reaction?.type || null);
-      }
+      // 使用 api 客户端自动添加 Authorization header
+      const data = await api.get<ReactionResponse>(`/materials/${materialId}/reactions`);
+      setCounts(data.counts);
+      setUserReaction(data.user_reaction?.type || null);
     } catch (error) {
       console.error('Failed to fetch reactions:', error);
     } finally {
@@ -262,40 +292,31 @@ export function useReactions(materialId: number) {
     }
   }, [materialId]);
 
-  const addReaction = useCallback(async (type: ReactionType) => {
-    const response = await fetch(`/api/v1/materials/${materialId}/reactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ reaction_type: type }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to add reaction');
+  const addReaction = useCallback(async (type: ReactionType): Promise<void> => {
+    // 检查是否已登录
+    const token = getToken();
+    if (!token) {
+      throw new Error('请先登录后再表达反馈');
     }
 
-    const data = await response.json();
+    const data = await api.post<ReactionResponse>(`/materials/${materialId}/reactions`, {
+      reaction_type: type,
+    });
+
     setCounts(data.counts);
     setUserReaction(type);
-    return data;
   }, [materialId]);
 
-  const removeReaction = useCallback(async () => {
-    const response = await fetch(`/api/v1/materials/${materialId}/reactions`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to remove reaction');
+  const removeReaction = useCallback(async (): Promise<void> => {
+    // 检查是否已登录
+    const token = getToken();
+    if (!token) {
+      throw new Error('请先登录后再表达反馈');
     }
 
-    const data = await response.json();
+    const data = await api.delete<ReactionResponse>(`/materials/${materialId}/reactions`);
     setCounts(data.counts);
     setUserReaction(null);
-    return data;
   }, [materialId]);
 
   React.useEffect(() => {
